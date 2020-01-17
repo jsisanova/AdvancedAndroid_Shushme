@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.example.android.shushme">
 
     <application
@@ -11,7 +12,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="insert-your-api-key-here" />
+            android:value="AIzaSyAukvvsZlqNf8Ca3cSMF60Z3y3TPffdci8" />
 
         <activity android:name="com.example.android.shushme.MainActivity">
             <intent-filter>
@@ -24,6 +25,11 @@
             android:name="com.example.android.shushme.provider.PlaceContentProvider"
             android:authorities="com.example.android.shushme"
             android:exported="false"/>
+
+        <meta-data
+            tools:replace="android:value"
+            android:name="android.support.VERSION"
+            android:value="26.1.0" />
 
     </application>
 
