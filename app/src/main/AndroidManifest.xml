@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.example.android.shushme">
 
     <application
@@ -10,6 +11,9 @@
         android:theme="@style/AppTheme">
 
         <!-- TODO (1) Add meta-data tag with API key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyAukvvsZlqNf8Ca3cSMF60Z3y3TPffdci8" />
 
         <activity android:name="com.example.android.shushme.MainActivity">
             <intent-filter>
@@ -23,8 +27,16 @@
             android:authorities="com.example.android.shushme"
             android:exported="false"/>
 
+        <meta-data
+            tools:replace="android:value"
+            android:name="android.support.VERSION"
+            android:value="26.1.0" />
+
     </application>
 
     <!-- TODO (2) Add uses-permission tags for INTERNET and ACCESS_FINE_LOCATION -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!--for wifi, GPS & cell towers-->
 
 </manifest>
