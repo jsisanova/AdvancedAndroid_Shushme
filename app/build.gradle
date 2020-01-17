@@ -10,6 +10,7 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -26,9 +27,14 @@ dependencies {
     })
     implementation 'com.android.support:appcompat-v7:26.1.0'
     implementation 'com.android.support:recyclerview-v7:26.0.1'
+
     // Add play-services-places and play-services-location dependencies
-    implementation 'com.google.android.gms:play-services-places:9.8.0'
-    implementation 'com.google.android.gms:play-services-location:9.8.0'
+//    implementation 'com.google.android.gms:play-services-places:9.8.0'
+//    implementation 'com.google.android.gms:play-services-location:9.8.0'
+
+    implementation 'com.google.android.libraries.places:places:1.0.0'
+//    implementation 'com.google.android.libraries.places:places-compat:1.0.0'
+//    implementation 'com.google.android.gms:play-services-places:16.0.0'
 
     testImplementation 'junit:junit:4.12'
 }
