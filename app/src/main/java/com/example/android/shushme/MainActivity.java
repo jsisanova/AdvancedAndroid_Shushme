@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String TAG = MainActivity.class.getSimpleName();
     private static final int PERMISSIONS_REQUEST_FINE_LOCATION = 111;
     private static final int PLACE_PICKER_REQUEST = 1;
-    private final String API_KEY = "AIzaSyC2jNNKG7LBBJMAOfPr0NixgWs6Jso4lFg";
+    private final String API_KEY = BuildConfig.ApiKey;
 
     // Member variables
     private PlaceListAdapter mAdapter;
