@@ -139,7 +139,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:padding="4dp"
-            android:src="@drawable/powered_by_google_light" />
+            android:src="@drawable/places_powered_by_google_light" />
 
         <TextView
             android:layout_width="match_parent"
