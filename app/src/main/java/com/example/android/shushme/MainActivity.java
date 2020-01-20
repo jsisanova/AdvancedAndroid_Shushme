@@ -3,9 +3,9 @@ package com.example.android.shushme;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
@@ -16,23 +16,21 @@ import android.widget.CheckBox;
 import android.widget.Toast;
 
 import com.example.android.shushme.provider.PlaceContract;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
-import com.google.android.gms.common.GooglePlayServicesRepairableException;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
-import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
-
+import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.Status;
-import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.libraries.places.api.Places;
 
 import com.google.android.libraries.places.api.model.Place;
+import com.google.android.libraries.places.api.net.FetchPlaceRequest;
+import com.google.android.libraries.places.api.net.FetchPlaceResponse;
 import com.google.android.libraries.places.api.net.PlacesClient;
 import com.google.android.libraries.places.widget.Autocomplete;
 import com.google.android.libraries.places.widget.AutocompleteActivity;
 import com.google.android.libraries.places.widget.model.AutocompleteActivityMode;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -42,12 +40,15 @@ public class MainActivity extends AppCompatActivity {
     // Constants
     public static final String TAG = MainActivity.class.getSimpleName();
     private static final int PERMISSIONS_REQUEST_FINE_LOCATION = 111;
-    private static final int PLACE_PICKER_REQUEST = 1;
+    private static final int AUTOCOMPLETE_REQUEST_CODE = 10;
     private final String API_KEY = BuildConfig.ApiKey;
 
     // Member variables
     private PlaceListAdapter mAdapter;
     private RecyclerView mRecyclerView;
+
+    private PlacesClient placesClient;
+    private ArrayList<MyPlace> mData;
 
     /**
      * Called when the activity is starting
@@ -65,22 +66,56 @@ public class MainActivity extends AppCompatActivity {
         // TODO (3) Modify the Adapter to take a PlaceBuffer in the constructor
         mAdapter = new PlaceListAdapter(this);
         mRecyclerView.setAdapter(mAdapter);
+        mData = new ArrayList<>();
 
 
         // Initialize Places.
         Places.initialize(getApplicationContext(), API_KEY);
         // Create a new Places API client instance.
-        PlacesClient placesClient = Places.createClient(this);
+        placesClient = Places.createClient(this);
+
+        // query all locally stored place IDs
+        Cursor cursor = getContentResolver().query(PlaceContract.PlaceEntry.CONTENT_URI,
+                null,
+                null,
+                null,
+                null);
+        if (cursor == null || cursor.getCount() == 0) return;
+        ArrayList<String> id = new ArrayList<>();
+        while (cursor.moveToNext()){
+            getPlaceDetail(cursor.getString(1));
+        }
     }
 
+    private void getPlaceDetail(String id){
+        // Specify the fields to return.
+        List<Place.Field> placeFields = Arrays.asList(Place.Field.ID, Place.Field.NAME);
 
-    // TODO (1) Implement a method called refreshPlacesData that:
-        // - Queries all the locally stored Places IDs
-        // - Calls Places.GeoDataApi.getPlaceById with that list of IDs
-        // Note: When calling Places.GeoDataApi.getPlaceById use the same GoogleApiClient created
-        // in MainActivity's onCreate (you will have to declare it as a private member)
+        // Construct a request object, passing the place ID and fields array.
+        FetchPlaceRequest request = FetchPlaceRequest.newInstance(id, placeFields);
 
-    //TODO (8) Set the getPlaceById callBack so that onResult calls the Adapter's swapPlaces with the result
+        // Add a listener to handle the response, get details for the specified place
+        placesClient.fetchPlace(request)
+                .addOnSuccessListener(new OnSuccessListener<FetchPlaceResponse>() {
+                    @Override
+                    public void onSuccess(FetchPlaceResponse fetchPlaceResponse) {
+                        Place place = fetchPlaceResponse.getPlace();
+                        mData.add(new MyPlace(place.getId(),place.getName(),place.getAddress()));
+                        mAdapter.setmData(mData);
+                        Log.i(TAG, "Place found: " + place.getName());
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                if (e instanceof ApiException) {
+                    ApiException apiException = (ApiException) e;
+                    int statusCode = apiException.getStatusCode();
+                    // Handle error with given status code.
+                    Log.e(TAG, "Place not found: " + e.getMessage());
+                }
+            }
+        });
+    }
 
     //TODO (2) call refreshPlacesData in GoogleApiClient's onConnected and in the Add New Place button click event
 
@@ -105,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Autocomplete.IntentBuilder(
                 AutocompleteActivityMode.FULLSCREEN, fields)
                 .build(this);
-        startActivityForResult(intent,PLACE_PICKER_REQUEST);
+        startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE);
     }
 
 
@@ -119,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
      */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == PLACE_PICKER_REQUEST) {
+        if (requestCode == AUTOCOMPLETE_REQUEST_CODE) {
             if (resultCode == RESULT_OK) {
                 // TODO (4) In onActivityResult, use getPlaceFromIntent to extract the Place ID and insert it into the DB
                 Place place = (Place) Autocomplete.getPlaceFromIntent(data);

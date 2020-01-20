@@ -1,21 +1,5 @@
 package com.example.android.shushme;
 
-/*
-* Copyright (C) 2017 The Android Open Source Project
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*  	http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
-
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -23,9 +7,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+
+
 public class PlaceListAdapter extends RecyclerView.Adapter<PlaceListAdapter.PlaceViewHolder> {
 
     private Context mContext;
+    private ArrayList<MyPlace> mData;
 
     /**
      * Constructor using the context and the db cursor
@@ -33,8 +21,8 @@ public class PlaceListAdapter extends RecyclerView.Adapter<PlaceListAdapter.Plac
      * @param context the calling context/activity
      */
     public PlaceListAdapter(Context context) {
-        // TODO (4) Take a PlaceBuffer as an input and store it as a local private member mPlaces
         this.mContext = context;
+        this.mData = new ArrayList<>();
     }
 
     /**
@@ -61,10 +49,11 @@ public class PlaceListAdapter extends RecyclerView.Adapter<PlaceListAdapter.Plac
     @Override
     public void onBindViewHolder(PlaceViewHolder holder, int position) {
         // TODO (6) Implement onBindViewHolder to set the view holder's Name and Address text fields
-        // from the Place object at the specified position in mPlaces
+        // from the MyPlace object at the specified position in mData
+        MyPlace place = mData.get(position);
+        holder.nameTextView.setText(place.getName());
+        holder.addressTextView.setText(place.getAddress());
     }
-
-    //TODO (7) Implement a public method swapPlaces that replaces the current mPlaces PlaceBuffer with a new one
 
     /**
      * Returns the number of items in the cursor
@@ -73,8 +62,12 @@ public class PlaceListAdapter extends RecyclerView.Adapter<PlaceListAdapter.Plac
      */
     @Override
     public int getItemCount() {
-        // TODO (5) Update getItemCount to return mPlaces's item count
-        return 0;
+        return mData.size();
+    }
+
+    public void setmData(ArrayList<MyPlace> mData) {
+        this.mData = mData;
+        notifyDataSetChanged();
     }
 
     /**
