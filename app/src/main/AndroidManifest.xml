@@ -10,10 +10,6 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <!--<meta-data-->
-            <!--android:name="com.google.android.geo.API_KEY"-->
-            <!--android:value="AIzaSyAukvvsZlqNf8Ca3cSMF60Z3y3TPffdci8" />-->
-
         <activity android:name="com.example.android.shushme.MainActivity"
            >
             <intent-filter>
