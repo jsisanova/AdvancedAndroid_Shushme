@@ -47,7 +47,7 @@ public class PlaceListAdapter extends RecyclerView.Adapter<PlaceListAdapter.Plac
      */
     @Override
     public void onBindViewHolder(PlaceViewHolder holder, int position) {
-        // TODO (6) Implement onBindViewHolder to set the view holder's Name and Address text fields
+        // Implement onBindViewHolder to set the view holder's Name and Address text fields
         // from the MyPlace object at the specified position in mData
         MyPlace place = mData.get(position);
         holder.nameTextView.setText(place.getName());

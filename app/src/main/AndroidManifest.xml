@@ -28,8 +28,14 @@
             android:name="android.support.VERSION"
             android:value="26.1.0" />
 
+        <!-- If you want to use a BroadcastReceiver to listen for geofence transitions, add an element specifying the service name.-->
+        <receiver android:name=".GeofenceBroadcastReceiver" />
+
     </application>
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- Required if your app targets Android 10 (API level 29) or higher -->
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION"/>
 </manifest>

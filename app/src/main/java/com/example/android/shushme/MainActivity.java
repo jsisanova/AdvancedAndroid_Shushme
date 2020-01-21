@@ -1,7 +1,10 @@
 package com.example.android.shushme;
 
+import android.Manifest;
+import android.app.NotificationManager;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Bundle;
@@ -13,11 +16,15 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 import android.widget.Toast;
 
 import com.example.android.shushme.provider.PlaceContract;
 import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.common.api.Status;
+import com.google.android.gms.location.GeofencingClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.libraries.places.api.Places;
@@ -34,7 +41,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-
+// https://github.com/udacity/AdvancedAndroid_Shushme/compare/T0X.04-Exercise-Geofencing...T0X.04-Solution-Geofencing
+// https://github.com/udacity/AdvancedAndroid_Shushme/compare/T0X.05-Exercise-SilentMode...T0X.05-Solution-SilentMode
+// https://developer.android.com/training/location/geofencing
+// https://3en.cloud/insight/2018/4/24/setting-up-geofencing-with-notifications-on-android
+// https://github.com/android/location-samples/tree/master/Geofencing
 public class MainActivity extends AppCompatActivity {
 
     // Constants
@@ -49,6 +60,10 @@ public class MainActivity extends AppCompatActivity {
 
     private PlacesClient placesClient;
     private ArrayList<MyPlace> mData;
+    private GeofencingClient geofencingClient;
+    private Geofencing geofencing;
+    private boolean mIsEnabled;
+
 
     /**
      * Called when the activity is starting
@@ -72,11 +87,28 @@ public class MainActivity extends AppCompatActivity {
 
         // TODO (10) Handle the switch's change event and Register/Unregister geofences based on the value of isChecked
         // as well as set a private boolean mIsEnabled to the current switch's state
+        // Initialize the switch state and Handle enable/disable switch change
+        Switch onOffSwitch = (Switch) findViewById(R.id.enable_switch);
+        mIsEnabled = getPreferences(MODE_PRIVATE).getBoolean(getString(R.string.setting_enabled), false);
+        onOffSwitch.setChecked(mIsEnabled);
+        onOffSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                SharedPreferences.Editor editor = getPreferences(MODE_PRIVATE).edit();
+                editor.putBoolean(getString(R.string.setting_enabled), isChecked);
+                mIsEnabled = isChecked;
+                editor.commit();
+                if (isChecked) addAllGeofences();
+                else removeAllGeofences();
+            }
+
+        });
 
         // Initialize Places.
         Places.initialize(getApplicationContext(), API_KEY);
         // Create a new Places API client instance.
         placesClient = Places.createClient(this);
+
 
         // query all locally stored place IDs
         Cursor cursor = getContentResolver().query(PlaceContract.PlaceEntry.CONTENT_URI,
@@ -86,9 +118,12 @@ public class MainActivity extends AppCompatActivity {
                 null);
         if (cursor == null || cursor.getCount() == 0) return;
         ArrayList<String> id = new ArrayList<>();
-        while (cursor.moveToNext()){
+        while (cursor.moveToNext()) {
             getPlaceDetail(cursor.getString(1));
         }
+
+
+
 
 
         // TODO (1) Create a Geofencing class with a Context and GoogleApiClient constructor that
@@ -115,12 +150,14 @@ public class MainActivity extends AppCompatActivity {
         // unregisters all geofences by calling LocationServices.GeofencingApi.removeGeofences
         // using the helper function getGeofencePendingIntent()
 
-        // TODO (8) Create a new instance of Geofencing using "this" as the context and mClient as the client
+        // To access the location APIs, you need to create an instance of the Geofencing client.
+        geofencingClient = LocationServices.getGeofencingClient(this);
+        geofencing = new Geofencing(this);
     }
 
-    private void getPlaceDetail(String id){
+    private void getPlaceDetail(String id) {
         // Specify the fields to return.
-        List<Place.Field> placeFields = Arrays.asList(Place.Field.ID, Place.Field.NAME);
+        List<Place.Field> placeFields = Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG);
 
         // Construct a request object, passing the place ID and fields array.
         FetchPlaceRequest request = FetchPlaceRequest.newInstance(id, placeFields);
@@ -131,10 +168,16 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onSuccess(FetchPlaceResponse fetchPlaceResponse) {
                         Place place = fetchPlaceResponse.getPlace();
-                        mData.add(new MyPlace(place.getId(),place.getName(),place.getAddress()));
+                        mData.add(new MyPlace(place.getId(), place.getName(), place.getAddress(), place.getLatLng()));
                         mAdapter.setmData(mData);
                         Log.i(TAG, "Place found: " + place.getName());
+                        Log.i(TAG, "Places: " + mData.size());
+                        if (mData.size() > 0) {
+                            geofencing.updateGeofencesList(mData);
+                            if (mIsEnabled) addAllGeofences();
+                        }
                     }
+
                 }).addOnFailureListener(new OnFailureListener() {
             @Override
             public void onFailure(@NonNull Exception e) {
@@ -146,10 +189,12 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
+
+
     }
 
 
-    // TODO (11) Call updateGeofenceList and registerAllGeofences if mIsEnabled is true
 
     /***
      * Button Click event handler to handle clicking the "Add new location" Button
@@ -167,7 +212,7 @@ public class MainActivity extends AppCompatActivity {
             Places.initialize(getApplicationContext(), API_KEY);
         }
         // Set the fields to specify which types of place data to return.
-        List<Place.Field> fields = Arrays.asList(Place.Field.ID, Place.Field.NAME);
+        List<Place.Field> fields = Arrays.asList(Place.Field.ID, Place.Field.NAME, Place.Field.LAT_LNG);
         // Start the autocomplete intent.
         Intent intent = new Autocomplete.IntentBuilder(
                 AutocompleteActivityMode.FULLSCREEN, fields)
@@ -177,6 +222,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     // Implement onActivityResult and check that the requestCode is PLACE_PICKER_REQUEST
+
     /***
      * Called when the Place Picker Activity returns back with a selected place (or after canceling)
      *
@@ -230,6 +276,24 @@ public class MainActivity extends AppCompatActivity {
             locationPermissions.setChecked(true);
             locationPermissions.setEnabled(false);
         }
+
+
+        // Initialize ringer permissions checkbox
+        CheckBox ringerPermissions = (CheckBox) findViewById(R.id.ringer_permissions_checkbox);
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        // Check if the API supports such permission change and check if permission is granted
+        assert nm != null;
+        if (android.os.Build.VERSION.SDK_INT >= 24 && !nm.isNotificationPolicyAccessGranted()) {
+            ringerPermissions.setChecked(false);
+        } else {
+            ringerPermissions.setChecked(true);
+            ringerPermissions.setEnabled(false);
+        }
+    }
+
+    public void onRingerPermissionsClicked(View view) {
+        Intent intent = new Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
+        startActivity(intent);
     }
 
     public void onLocationPermissionClicked(View view) {
@@ -237,6 +301,60 @@ public class MainActivity extends AppCompatActivity {
                 new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
                 PERMISSIONS_REQUEST_FINE_LOCATION);
     }
+
+
+
+    public void addAllGeofences() {
+        if (geofencingClient == null) {
+            return;
+        }
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        geofencingClient.addGeofences(geofencing.getGeofencingRequest(), geofencing.getGeofencePendingIntent())
+                .addOnSuccessListener(this, new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        // Geofences added
+                        // ...
+                    }
+                })
+                .addOnFailureListener(this, new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        // Failed to add geofences
+                        // ...
+                    }
+                });
+    }
+
+    public void removeAllGeofences() {
+        geofencingClient.removeGeofences(geofencing.getGeofencePendingIntent())
+                .addOnSuccessListener(this, new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        // Geofences removed
+                        // ...
+                    }
+                })
+                .addOnFailureListener(this, new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        // Failed to remove geofences
+                        // ...
+                    }
+                });
+    }
+
+
 }
 
 
