@@ -28,7 +28,7 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
      */
     @Override
     public void onReceive(Context context, Intent intent) {
-        // Get the Geofence Event from the Intent sent through
+        // Get the Geofence Event (that caused the transition) from the Intent sent through
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
         if (geofencingEvent.hasError()) {
             Log.e(TAG, String.format("Error code : %d", geofencingEvent.getErrorCode()));
@@ -36,6 +36,7 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
         }
 
         // Get the transition type.
+        // And based on the transition type, we can use AudioManager to set the phone ringer mode.
         int geofenceTransition = geofencingEvent.getGeofenceTransition();
         // Check which transition type has triggered this event
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER) {
@@ -83,6 +84,7 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(context);
 
         // Check the transition type to display the relevant icon image
+        // create a typical Android notification with an icon corresponding to either being silent or normal
         if (transitionType == Geofence.GEOFENCE_TRANSITION_ENTER) {
             builder.setSmallIcon(R.drawable.ic_volume_off_white_24dp)
                     .setLargeIcon(BitmapFactory.decodeResource(context.getResources(),
@@ -120,6 +122,7 @@ public class GeofenceBroadcastReceiver extends BroadcastReceiver {
     private void setRingerMode(Context context, int mode) {
         NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         // Check for DND permissions for API 24+
+        //  It also creates a NotificationManager to check for permissions for Android N or later.
         if (android.os.Build.VERSION.SDK_INT < 24 ||
                 (android.os.Build.VERSION.SDK_INT >= 24 && !nm.isNotificationPolicyAccessGranted())) {
             AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);

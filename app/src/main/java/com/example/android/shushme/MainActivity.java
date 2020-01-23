@@ -84,8 +84,7 @@ public class MainActivity extends AppCompatActivity {
 
         // TODO (9) Create a boolean SharedPreference to store the state of the "Enable Geofences" switch
         // and initialize the switch based on the value of that SharedPreference
-
-        // TODO (10) Handle the switch's change event and Register/Unregister geofences based on the value of isChecked
+        // TODO (10) Handle the switch's change event and add / remove geofences based on the value of isChecked
         // as well as set a private boolean mIsEnabled to the current switch's state
         // Initialize the switch state and Handle enable/disable switch change
         Switch onOffSwitch = (Switch) findViewById(R.id.enable_switch);
@@ -119,36 +118,12 @@ public class MainActivity extends AppCompatActivity {
         if (cursor == null || cursor.getCount() == 0) return;
         ArrayList<String> id = new ArrayList<>();
         while (cursor.moveToNext()) {
+            // 1 = It's the column index.
+            // Eg, if the query was select a, b, c from ..., column index 1 would be b (being zero-based, the column indexes for that query are 0 = a, 1 = b and 2 = c).
+            // An alternative would be to use cursor.getString (cursor.getColumnIndex ("b"))
             getPlaceDetail(cursor.getString(1));
         }
 
-
-
-
-
-        // TODO (1) Create a Geofencing class with a Context and GoogleApiClient constructor that
-        // initializes a private member ArrayList of Geofences called mGeofenceList
-
-        // TODO (2) Inside Geofencing, implement a public method called updateGeofencesList that
-        // given a PlaceBuffer will create a Geofence object for each Place using Geofence.Builder
-        // and add that Geofence to mGeofenceList
-
-        // TODO (3) Inside Geofencing, implement a private helper method called getGeofencingRequest that
-        // uses GeofencingRequest.Builder to return a GeofencingRequest object from the Geofence list
-
-        // TODO (4) Create a GeofenceBroadcastReceiver class that extends BroadcastReceiver and override
-        // onReceive() to simply log a message when called. Don't forget to add a receiver tag in the Manifest
-
-        // TODO (5) Inside Geofencing, implement a private helper method called getGeofencePendingIntent that
-        // returns a PendingIntent for the GeofenceBroadcastReceiver class
-
-        // TODO (6) Inside Geofencing, implement a public method called registerAllGeofences that
-        // registers the GeofencingRequest by calling LocationServices.GeofencingApi.addGeofences
-        // using the helper functions getGeofencingRequest() and getGeofencePendingIntent()
-
-        // TODO (7) Inside Geofencing, implement a public method called unRegisterAllGeofences that
-        // unregisters all geofences by calling LocationServices.GeofencingApi.removeGeofences
-        // using the helper function getGeofencePendingIntent()
 
         // To access the location APIs, you need to create an instance of the Geofencing client.
         geofencingClient = LocationServices.getGeofencingClient(this);
@@ -282,6 +257,7 @@ public class MainActivity extends AppCompatActivity {
         CheckBox ringerPermissions = (CheckBox) findViewById(R.id.ringer_permissions_checkbox);
         NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         // Check if the API supports such permission change and check if permission is granted
+        // since we don’t want the user to be unchecking this after permissions have been granted, it's best to disable the checkbox once everything seems to be set properly.
         assert nm != null;
         if (android.os.Build.VERSION.SDK_INT >= 24 && !nm.isNotificationPolicyAccessGranted()) {
             ringerPermissions.setChecked(false);
@@ -291,6 +267,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // checkbox to ask the user for RingerMode permissions
     public void onRingerPermissionsClicked(View view) {
         Intent intent = new Intent(android.provider.Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
         startActivity(intent);
@@ -310,13 +287,9 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+            // Consider calling ActivityCompat#requestPermissions here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation for ActivityCompat#requestPermissions for more details.
             return;
         }
         geofencingClient.addGeofences(geofencing.getGeofencingRequest(), geofencing.getGeofencePendingIntent())
